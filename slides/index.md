@@ -114,12 +114,12 @@ var result = CustomerService.Handle( //method overloading
         }        
         if(Deduplicator.IsDuplicate(request))
             return Errors.DuplicateRequest;
-        
         object result;
         try{
-            result = Polly. service.Handle(request);
+            result = Polly.Handle<TimeoutException>()
+                          .Retry(5)
+                          .Execute(()=> service.Handle(request));
         }
-        
         catch(Exception ex)
         {
             return Error.Exception(ex)
