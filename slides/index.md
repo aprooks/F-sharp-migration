@@ -1,37 +1,137 @@
-- title : React Native with F#
-- description : Introduction to React Native with F#
-- author : Steffen Forkmann
+- title : F#: Migration guid
+- description : Why F# is awesome and how to start using it right now
+- author : Alexander Prooks 
 - theme : night
 - transition : default
 
 ***
 
-## React Native with F#
+## F# |> LV
 
 <br />
 <br />
 
-### Modern mobile app development
+### Simple ways of daily usage
 
 <br />
 <br />
-Steffen Forkmann - [@sforkmann](http://www.twitter.com/sforkmann)
+Alexander Prooks - [@aprooks](http://www.twitter.com/aprooks)
 
 ***
 
-### Modern mobile app development?
+### Type system intro
 
-* UI/UX
-    * "Native mobile apps"
-    * Performance
-* Tooling
-    * Hot loading
-    * IntelliSense
-* Maintainability
-    * Easy to debug
-    * Correctness
+#### non sucking C# handling pipe
+
+``` C#
+public class CustomerService
+{
+    public static Result CreateCustomer(
+                    string id, 
+                    string username, 
+                    string email, 
+                    string name,
+                    string lastName, 
+                    string phone, 
+                    password)
+    {
+        //Validate
+        //Persist
+    }
+
+}
+```
 
 ---
+
+``` C#
+//...
+CustomerService.CreateCustomer(
+    "asdfgh-1234-1234",
+    "aprooks",
+    "aprooks@live.ru",
+    "Prooks",
+    "Alexander",
+    "somePass",
+    "79062190016");
+
+```
+---
+[Introduce Parameter Object (c) Fowler](https://refactoring.com/catalog/introduceParameterObject.html)
+```
+[Serializable]
+public class CreateCustomerDto
+{
+    public Result CreateCustomer(
+                    string id, 
+                    string username, 
+                    string email, 
+                    string name,
+                    string lastName, 
+                    string phone, 
+                    password)
+    {
+        this.Id = id;
+        this.Username = username;
+        this.Name = name;
+        this.SurName = lastName;
+        this.Phone = phone;
+        this.Password  = password
+    }
+
+    public string ID {get;}
+    public string Username {get;}
+    //... the rest of boilerplate
+    }
+
+```
+---
+``` C#
+//...
+var result = CustomerService.Handle( //method overloading
+                  new CreateCustomerDto(  
+                            id: "Id",
+                            username: "Aprooks",
+                            email: "aprooks@live.ru",
+                            phone: "79062190016"
+                            name: "Alexander",
+                            lastName: "Prooks",
+                            password:"helloWorld"
+                ));
+
+```
+---
+``` C#
+//some wrapper
+    public Result Handle<T>(T request){
+        Log.Debug("Handled {request}",request);
+        //https://github.com/JeremySkinner/FluentValidation/wiki
+        var validator = ValidationFactory.GetValidator<T>();
+        if(validator!=null){
+            var validationResult = validator.Validate(request);
+            if(!result.IsValid)
+                return validationResult.ToError();
+        }        
+        if(Deduplicator.IsDuplicate(request))
+            return Errors.DuplicateRequest;
+        
+        object result;
+        try{
+            result = Polly. service.Handle(request);
+        }
+        
+        catch(Exception ex)
+        {
+            return Error.Exception(ex)
+        }
+        return Result.Handled(result);
+    }
+```
+
+
+
+
+***
 
 ### "Native" UI
 
