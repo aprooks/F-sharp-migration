@@ -100,7 +100,9 @@ var result = CustomerService.Handle( //method overloading
                 ));
 
 ```
+
 ---
+
 ``` C#
 //some wrapper
     public Result Handle<T>(T request){
@@ -128,8 +130,210 @@ var result = CustomerService.Handle( //method overloading
     }
 ```
 
+***
 
+## F# version
 
+### Record types
+
+``` F#
+type CreateCustomer = {
+    id: string
+    username: string
+    email: string
+    phone: string
+    name: string
+    lastName: string
+    password: string
+}
+
+```
+---
+
+### Generated .net code
+
+``` C#
+[Serializable]
+public sealed class CreateCustomer {
+    IEquatable<FinalGameScore>,
+    IStructuralEquatable,
+    IComparable<FinalGameScore>,
+    IComparable,
+    IStructuralComparable
+ 
+    //props
+    //Consstructor
+    //Interfaces implementations
+}
+```
+
+[Full comparison](https://fsharpforfunandprofit.com/posts/fsharp-decompiled/)
+
+---
+### Using records
+
+``` F#
+let dto = {
+    id= "test"
+    username= "aprooks"
+    email= "aprooks@live.ru"
+    phone= "79062190016"
+    name= "Alexander"
+    lastName= "Prooks"
+    password="secret"
+}
+
+```
+
+---
+
+### Record syntax sugar
+
+``` F#
+let copy = {
+    id= "test"
+    username= "aprooks"
+    email= "aprooks@live.ru"
+    phone= "79062190016"
+    name= "Alexander"
+    lastName= "Prooks"
+    password="secret"
+}
+copy = dto //true
+
+let a = dto
+a = dto //true
+
+let b = {a with id="Test2"} //!!!!
+b=a //false
+```
+
+---
+
+## Type safety and self documentation
+
+### Aliases
+
+``` F#
+type Id = string
+type Email = string
+type Username = string
+
+type CreateCustomer2 = {
+    id: Id
+    username: Username
+    email: Email
+    phone: string
+    name: string
+    lastName: string
+    password: string
+}
+```
+
+---
+
+### Enforced single-case types
+
+``` F#
+type Id = Id of string
+type Email = Email of string
+type Username = Username of string
+
+type Customer = {
+    id: Id
+    username: Username
+    email: Email
+    phone: string
+    name: string
+    lastName: string
+    password: string
+}
+```
+
+---
+
+### Compile time validation!
+
+```
+let id = Id "test"
+let Username = Username "test"
+
+id = Username //compile error
+
+```
+
+---
+
+### Multiple case type (DU)
+
+``` F#
+type Gender = 
+| Male
+| Female
+| Other of string
+
+type Customer = { ... 
+    Gender: Gender
+}
+
+let a = Male
+let b = Other "111"
+```
+
+---
+
+### Basic Pattern matching
+
+``` F#
+let toString gender= 
+        match gender with 
+        | Male -> "male"
+        | Female -> "female"
+        | Other s -> s
+
+//same as:
+
+let toString = function 
+                | Male -> "male"
+                | Female -> "female"
+                | Other s -> s
+
+```
+
+---
+
+### other way round
+
+``` F#
+let fromString = function
+                  | "male" -> Male
+                  | "female" -> Female
+                  | other -> Other other
+
+```
+---
+### Code as docs
+
+``` F#
+type Percent = Percent of decimal
+type Amount = Amount of decimal
+type NumberOfNights = NumberOfNights of uint
+
+type Discount = 
+| ``Monetary per night`` of Amount
+| ``Percent per night`` of Percent
+| ``Monetary per stay`` of Amount
+| ``Monetary for extra guest per night`` of uint * Amount
+| ``Percent for extra stay`` of  NumberOfNights * Percentage
+
+// public class MonetaryPerNight: IDiscount blah blah
+```
+
+### Types conclusion
+
+* No boilerplate
+* Readability
+* Type safety for free
 
 ***
 
