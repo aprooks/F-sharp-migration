@@ -43,26 +43,24 @@ public class CustomerService
 ```
 
 ---
-
-``` C#
-//...
-CustomerService.CreateCustomer(
-    "asdfgh-1234-1234",
-    "aprooks",
-    "aprooks@live.ru",
-    "Prooks",
-    "Alexander",
-    "somePass",
-    "79062190016");
-
-```
+    [lang=csharp] 
+    //...
+    CustomerService.CreateCustomer(
+        "asdfgh-1234-1234",
+        "aprooks",
+        "aprooks@live.ru",
+        "Prooks",
+        "Alexander",
+        "somePass",
+        "79062190016");
+    
 ---
 [Introduce Parameter Object (c) Fowler](https://refactoring.com/catalog/introduceParameterObject.html)
 ```
 [Serializable]
 public class CreateCustomerDto
 {
-    public Result CreateCustomer(
+    public CreateCustomer(
                     string id, 
                     string username, 
                     string email, 
@@ -74,15 +72,14 @@ public class CreateCustomerDto
         this.Id = id;
         this.Username = username;
         this.Name = name;
-        this.SurName = lastName;
+        this.Surname = lastName;
         this.Phone = phone;
         this.Password  = password
     }
-
     public string ID {get;}
     public string Username {get;}
-    //... the rest of boilerplate
-    }
+    //etc..
+}
 
 ```
 ---
@@ -136,18 +133,16 @@ var result = CustomerService.Handle( //method overloading
 
 ### Record types
 
-``` F#
-type CreateCustomer = {
-    id: string
-    username: string
-    email: string
-    phone: string
-    name: string
-    lastName: string
-    password: string
-}
+    type CreateCustomer = {
+        id: string
+        username: string
+        email: string
+        phone: string
+        name: string
+        lastName: string
+        password: string
+    }
 
-```
 ---
 
 ### Generated .net code
@@ -155,9 +150,9 @@ type CreateCustomer = {
 ``` C#
 [Serializable]
 public sealed class CreateCustomer {
-    IEquatable<FinalGameScore>,
+    IEquatable<CreateCustomer>,
     IStructuralEquatable,
-    IComparable<FinalGameScore>,
+    IComparable<CreateCustomer>,
     IComparable,
     IStructuralComparable
  
@@ -172,41 +167,36 @@ public sealed class CreateCustomer {
 ---
 ### Using records
 
-``` F#
-let dto = {
-    id= "test"
-    username= "aprooks"
-    email= "aprooks@live.ru"
-    phone= "79062190016"
-    name= "Alexander"
-    lastName= "Prooks"
-    password="secret"
-}
-
-```
+    let dto = {
+        id= "test"
+        username= "aprooks"
+        email= "aprooks@live.ru"
+        phone= "79062190016"
+        name= "Alexander"
+        lastName= "Prooks"
+        password="secret"
+    }
 
 ---
 
 ### Record syntax sugar
 
-``` F#
-let copy = {
-    id= "test"
-    username= "aprooks"
-    email= "aprooks@live.ru"
-    phone= "79062190016"
-    name= "Alexander"
-    lastName= "Prooks"
-    password="secret"
-}
-copy = dto //true
-
-let a = dto
-a = dto //true
-
-let b = {a with id="Test2"} //!!!!
-b=a //false
-```
+    let copy = {
+        id= "test"
+        username= "aprooks"
+        email= "aprooks@live.ru"
+        phone= "79062190016"
+        name= "Alexander"
+        lastName= "Prooks"
+        password="secret"
+    }
+    copy = dto //true
+    
+    let a = dto
+    a = dto //true
+    
+    let b = {a with id="Test2"} //!!!!
+    b = a //false
 
 ---
 
@@ -214,71 +204,64 @@ b=a //false
 
 ### Aliases
 
-``` F#
-type Id = string
-type Email = string
-type Username = string
-
-type CreateCustomer2 = {
-    id: Id
-    username: Username
-    email: Email
-    phone: string
-    name: string
-    lastName: string
-    password: string
-}
-```
-
+    type Id = string
+    type Email = string
+    type Username = string
+    
+    type CreateCustomer2 = {
+        id: Id
+        username: Username
+        email: Email
+        phone: string
+        name: string
+        lastName: string
+        password: string
+    }
+    
 ---
 
 ### Enforced single-case types
 
-``` F#
-type Id = Id of string
-type Email = Email of string
-type Username = Username of string
-
-type Customer = {
-    id: Id
-    username: Username
-    email: Email
-    phone: string
-    name: string
-    lastName: string
-    password: string
-}
-```
+    type Id = Id of string
+    type Email = Email of string
+    type Username = Username of string
+    
+    type Customer = {
+        id: Id
+        username: Username
+        email: Email
+        phone: string
+        name: string
+        lastName: string
+        password: string
+    }
 
 ---
 
 ### Compile time validation!
 
-```
-let id = Id "test"
-let Username = Username "test"
-
-id = Username //compile error
-
-```
-
+    let id = Id "test"
+    let Username = Username "test"
+    
+    //id = Username //compile error
+    
+    
 ---
 
 ### Multiple case type (DU)
 
-``` F#
-type Gender = 
-| Male
-| Female
-| Other of string
-
-type Customer = { ... 
-    Gender: Gender
-}
-
-let a = Male
-let b = Other "111"
-```
+    type Gender = 
+    | Male
+    | Female
+    | Other of string
+    
+    type CustomerWithGender = {
+        // ... 
+        Gender: Gender
+    }
+    
+    let a = Male
+    let b = Other "111"
 
 ---
 
@@ -336,6 +319,34 @@ type Discount =
 * Type safety for free
 
 ***
+
+
+## let (|>) x f = f x
+
+
+---
+
+## 'a -> 'a -> 'a
+
+```
+    // static class Test
+    module Test =                    
+        // static int sum(int a, int b) = { return a+b}
+        
+        // int -> int -> int
+        let sum (a:int) (b:int) = a+b     
+
+        // static int sum(decimal a, decimal b) = { return a+b}
+        // etc 
+
+        // 'a -> 'a -> 'a
+        let sum1 a b = a + b   //WAT??
+
+
+```
+
+***
+
 
 ### "Native" UI
 
