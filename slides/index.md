@@ -33,7 +33,7 @@ public class CustomerService
                     string name,
                     string lastName, 
                     string phone, 
-                    password)
+                    string password)
     {
         //Validate
         //Persist
@@ -80,11 +80,11 @@ public class CreateCustomerDto
     public string Username {get;}
     //etc..
 }
-
 ```
+
 ---
+
 ``` C#
-//...
 var result = CustomerService.Handle( //method overloading
                   new CreateCustomerDto(  
                             id: "Id",
@@ -95,7 +95,6 @@ var result = CustomerService.Handle( //method overloading
                             lastName: "Prooks",
                             password:"helloWorld"
                 ));
-
 ```
 
 ---
@@ -174,12 +173,12 @@ public sealed class CreateCustomer {
         phone= "79062190016"
         name= "Alexander"
         lastName= "Prooks"
-        password="secret"
+        password= "secret"
     }
 
 ---
 
-### Record syntax sugar
+### Syntax sugar
 
     let copy = {
         id= "test"
@@ -188,19 +187,18 @@ public sealed class CreateCustomer {
         phone= "79062190016"
         name= "Alexander"
         lastName= "Prooks"
-        password="secret"
+        password= "secret"
     }
-    copy = dto //true
+    copy = dto //values comparison
+    //true
     
-    let a = dto
-    a = dto //true
-    
-    let b = {a with id="Test2"} //!!!!
-    b = a //false
+    let b = {a with id="Test2"}
+    //!!!!
 
+    b = a //false
 ---
 
-## Type safety and self documentation
+## Self documented code
 
 ### Aliases
 
@@ -245,7 +243,6 @@ public sealed class CreateCustomer {
     
     //id = Username //compile error
     
-    
 ---
 
 ### Multiple case type (DU)
@@ -265,52 +262,49 @@ public sealed class CreateCustomer {
 
 ---
 
-### Basic Pattern matching
+### Pattern matching
 
-``` F#
-let toString gender= 
+    let toString gender= 
         match gender with 
         | Male -> "male"
         | Female -> "female"
         | Other s -> s
 
-//same as:
-
-let toString = function 
-                | Male -> "male"
-                | Female -> "female"
-                | Other s -> s
-
-```
+    //same as:
+    let toString =
+        function 
+        | Male -> "male"
+        | Female -> "female"
+        | Other s -> s
 
 ---
 
 ### other way round
 
-``` F#
-let fromString = function
-                  | "male" -> Male
-                  | "female" -> Female
-                  | other -> Other other
+    let fromString = function
+        | "male" -> Male
+        | "female" -> Female
+        | other -> Other other
 
-```
+
 ---
-### Code as docs
 
-``` F#
-type Percent = Percent of decimal
-type Amount = Amount of decimal
-type NumberOfNights = NumberOfNights of uint
+### DDD
 
-type Discount = 
-| ``Monetary per night`` of Amount
-| ``Percent per night`` of Percent
-| ``Monetary per stay`` of Amount
-| ``Monetary for extra guest per night`` of uint * Amount
-| ``Percent for extra stay`` of  NumberOfNights * Percentage
+    type Percent = Percent of decimal
+    type Amount = Amount of decimal
+    type NumberOfNights = NumberOfNights of uint
 
-// public class MonetaryPerNight: IDiscount blah blah
-```
+    type Discount = 
+    | ``Monetary per night`` of Amount
+    | ``Percent per night`` of Percent
+    | ``Monetary per stay`` of Amount
+    | ``Monetary for extra guest per night`` of uint * Amount
+    | ``Percent for extra stay`` of  NumberOfNights * Percentage
+
+    // C#: public class MonetaryPerNight: IDiscount blah blah
+
+---
 
 ### Types conclusion
 
@@ -320,30 +314,81 @@ type Discount =
 
 ***
 
-
 ## let (|>) x f = f x
+
+---
+
+## Reading signatures
+
+    // string -> string
+    let append (tail:string) string = "Hello " + tail
+    
+    // infered types:
+    let append tail = "Hello " + tail
+    
+    // append 10 //compile error
+    append "world" //"Hello world"
+    
+
+    // string -> string -> string
+    let concat a b = a + b
+
+    // unit -> int
+    let answer() = 42
+
+    // string -> unit
+    let devnull _ = ignore() 
+
+---
+
+## Function as params
+
+    // (string -> unit) -> (unit->'a)
+    let sample logger f = 
+        logger "started"
+        let res = f()
+        logger "ended"
+        res
+    
+    let consoleLogger output = printfn "%s: %s" (System.DateTime.Now.ToString("HH:mm:ss.f")) output
+    
+    let result = sample consoleLogger 
+                        (
+                            fun () -> 
+                                System.Threading.Thread.Sleep(500)
+                                42
+                        )
+
+---
+
+## Currying
+
+    //string -> string
+    let prepend x = concat x " world"
+
+
+    let dbExecute connection command = 
+
+
 
 
 ---
 
 ## 'a -> 'a -> 'a
 
-```
-    // static class Test
-    module Test =                    
-        // static int sum(int a, int b) = { return a+b}
-        
-        // int -> int -> int
-        let sum (a:int) (b:int) = a+b     
+    // int -> int -> int
+    let sum (a:int) (b:int) = a+b     
 
-        // static int sum(decimal a, decimal b) = { return a+b}
-        // etc 
+    // static int sum(decimal a, decimal b) = { return a+b}
+    // etc 
 
-        // 'a -> 'a -> 'a
-        let sum1 a b = a + b   //WAT??
+    // 'a -> 'b -> 'c
+    //           when ( ^a or  ^b) : (static member ( + ) :  ^a *  ^b ->  ^c)
+    let inline sum1 a b = a + b   //WAT??
 
-
-```
+    let d = 10m + 10m
+    let c = "test" + "passed"
+    let d = 100 + "test" //error
 
 ***
 
