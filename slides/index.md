@@ -11,11 +11,15 @@
 <br />
 <br />
 
-### Simple ways of daily usage
-
-<br />
 <br />
 Alexander Prooks - [@aprooks](http://www.twitter.com/aprooks)
+
+***
+
+
+<br/>
+<br/>
+<img src="images/Applicita-logo-onblack.png" style="background: transparent; border-style: none;"  />
 
 ***
 
