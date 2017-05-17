@@ -1,4 +1,4 @@
-- title : F#: Migration guid
+- title : Migrate to F#
 - description : Why F# is awesome and how to start using it right now
 - author : Alexander Prooks 
 - theme : night
@@ -156,7 +156,7 @@ public sealed class CreateCustomer {
     IStructuralComparable
  
     //props
-    //Consstructor
+    //Constructor
     //Interfaces implementations
 }
 ```
@@ -314,7 +314,7 @@ public sealed class CreateCustomer {
 
 ***
 
-## let (|>) x f = f x
+# Functions!
 
 ---
 
@@ -350,7 +350,8 @@ public sealed class CreateCustomer {
         logger "ended"
         res
     
-    let consoleLogger output = printfn "%s: %s" (System.DateTime.Now.ToString("HH:mm:ss.f")) output
+    let consoleLogger output =
+        printfn "%s: %s" (System.DateTime.Now.ToString("HH:mm:ss.f")) output
     
     let result = sample consoleLogger 
                         (
@@ -361,258 +362,139 @@ public sealed class CreateCustomer {
 
 ---
 
-## Currying
-
-    //string -> string
-    let prepend x = concat x " world"
-
-
-    let dbExecute connection command = 
-
-
-
-
----
-
 ## 'a -> 'a -> 'a
 
     // int -> int -> int
-    let sum (a:int) (b:int) = a+b     
+    let sumInts (a:int) (b:int) = a+b     
 
     // static int sum(decimal a, decimal b) = { return a+b}
     // etc 
 
     // 'a -> 'b -> 'c
     //           when ( ^a or  ^b) : (static member ( + ) :  ^a *  ^b ->  ^c)
-    let inline sum1 a b = a + b   //WAT??
+    let inline sum a b = a + b   //WAT??
 
     let d = 10m + 10m
     let c = "test" + "passed"
     let d = 100 + "test" //error
 
 ***
-
-
-### "Native" UI
-
- <img src="images/meter.png" style="background: transparent; border-style: none;"  width=300 />
+# let (|>) x f = f x
 
 ---
 
-### Tooling
+## Currying
+
+    // string -> string -> string
+    let concat x y = string.Concat(x,y)
+
+    // <=>
+
+    // string -> (string -> string)
+
+    // string -> string
+    let greet = concat "Hello"
+    // <=>
+    let greetVerbose w = concat "Hello" w
+
+---
+
+## DI F# way
+
+
+    module Persistence = 
+
+        let saveToDb connString (id,obj) = 
+            // blah blah
+            Success 
+
+    module CompositionRoot =
+        
+        let connectionString = loadFromConfig("database")
+        let persist = saveToDb connectionString
+
+    let result = persist ("123",customer)
+    
+---
+
+## Data pipe [0]
+
+    let evenOnly = Seq.filter (fun n -> n%2=0) {0..1000}
+    let doubled = Seq.map ((*) 2) evenOnly
+    let stringified = Seq.map (fun d-> d.ToString()) doubled
+    let greeted = Seq.map greet stringified
+
+    // ["Hello 0","Hello 4", ...]
+---
+
+## Data pipes [1]
+
+    let inline (|>) f x = x f   
+    
+    let evenF = (|>) ( {0..1000} ) ( Seq.filter (fun n -> n%2=0) )
+    
+    let evenInfix = {0..1000} |> ( Seq.filter (fun n -> n%2=0) )
+
+---
+
+## Piped data!
+
+    {0..1000}
+    |> Seq.filter (fun n -> n%2=0) //numbers
+    |> Seq.map ((*) 2) //evenOnly
+    |> Seq.map (fun d-> d.ToString()) //doubled
+    |> Seq.map greet //stringified
+
+---
+
+## Real world like
+
+    let handlingWrapper myHandler request = 
+        request
+        |> Log "Handling {request}"
+        |> Validator.EnsureIsValid
+        |> Deduplicator.EnsureNotDuplicate
+        |> Throttle (Times 5) myHandler
+        |> Log "Handling finished with {result}"
+
+***
+
+# How to migrate
+
+* Utilities [Paket, Fake]
+* Contracts 
+* Helpers 
+* Tests     [FsCheck, Expecto]
+* Code as client 
+
+***
+
+# Marketing
+
+* 2-20 times less code
+* Better reuse
+* Safer code => less bugs
+* Human readable code => faster feedback
+
+---
+
+### F# in UI
 
 <img src="images/hotloading.gif" style="background: transparent; border-style: none;"  />
 
-*** 
-
-### Model - View - Update
-
-#### "Elm - Architecture"
-
- <img src="images/Elm.png" style="background: white;" width=700 />
-
-
- <small>http://danielbachler.de/2016/02/11/berlinjs-talk-about-elm.html</small>
-
-
---- 
-
-### Model - View - Update
-
-    // MODEL
-
-    type Model = int
-
-    type Msg =
-    | Increment
-    | Decrement
-
-    let init() : Model = 0
-
 ---
 
-### Model - View - Update
-
-    // VIEW
-
-    let view model dispatch =
-        div []
-            [ button [ OnClick (fun _ -> dispatch Decrement) ] [ str "-" ]
-              div [] [ str (model.ToString()) ]
-              button [ OnClick (fun _ -> dispatch Increment) ] [ str "+" ] ]
-
----
-
-### Model - View - Update
-
-    // UPDATE
-
-    let update (msg:Msg) (model:Model) =
-        match msg with
-        | Increment -> model + 1
-        | Decrement -> model - 1
-
----
-
-### Model - View - Update
-
-    // wiring things up
-
-    Program.mkSimple init update view
-    |> Program.withConsoleTrace
-    |> Program.withReact "elmish-app"
-    |> Program.run
-
----
-
-### Model - View - Update
-
-# Demo
-
-***
-
-### Sub-Components
-
-    // MODEL
-
-    type Model = {
-        Counters : Counter.Model list
-    }
-
-    type Msg = 
-    | Insert
-    | Remove
-    | Modify of int * Counter.Msg
-
-    let init() : Model =
-        { Counters = [] }
-
----
-
-### Sub-Components
-
-    // VIEW
-
-    let view model dispatch =
-        let counterDispatch i msg = dispatch (Modify (i, msg))
-
-        let counters =
-            model.Counters
-            |> List.mapi (fun i c -> Counter.view c (counterDispatch i)) 
-        
-        div [] [ 
-            yield button [ OnClick (fun _ -> dispatch Remove) ] [  str "Remove" ]
-            yield button [ OnClick (fun _ -> dispatch Insert) ] [ str "Add" ] 
-            yield! counters ]
-
----
-
-### Sub-Components
-
-    // UPDATE
-
-    let update (msg:Msg) (model:Model) =
-        match msg with
-        | Insert ->
-            { Counters = Counter.init() :: model.Counters }
-        | Remove ->
-            { Counters = 
-                match model.Counters with
-                | [] -> []
-                | x :: rest -> rest }
-        | Modify (id, counterMsg) ->
-            { Counters =
-                model.Counters
-                |> List.mapi (fun i counterModel -> 
-                    if i = id then
-                        Counter.update counterMsg counterModel
-                    else
-                        counterModel) }
-
----
-
-### Sub-Components
-
-# Demo
-
-***
-
-### React
-
-* Facebook library for UI 
-* <code>state => view</code>
-* Virtual DOM
-
----
-
-### Virtual DOM - Initial
-
-<br />
-<br />
-
-
- <img src="images/onchange_vdom_initial.svg" style="background: white;" />
-
-<br />
-<br />
-
- <small>http://teropa.info/blog/2015/03/02/change-and-its-detection-in-javascript-frameworks.html</small>
-
----
-
-### Virtual DOM - Change
-
-<br />
-<br />
-
-
- <img src="images/onchange_vdom_change.svg" style="background: white;" />
-
-<br />
-<br />
-
- <small>http://teropa.info/blog/2015/03/02/change-and-its-detection-in-javascript-frameworks.html</small>
-
----
-
-### Virtual DOM - Reuse
-
-<br />
-<br />
-
-
- <img src="images/onchange_immutable.svg" style="background: white;" />
-
-<br />
-<br />
-
- <small>http://teropa.info/blog/2015/03/02/change-and-its-detection-in-javascript-frameworks.html</small>
-
-
-*** 
-
-### ReactNative
-
- <img src="images/ReactNative.png" style="background: white;" />
-
-
- <small>http://timbuckley.github.io/react-native-presentation</small>
-
-***
-
-### Show me the code
-
-*** 
-
-### TakeAways
-
-* Learn all the FP you can!
-* Simple modular design
-
-*** 
-
-### Thank you!
-
-* https://github.com/fable-compiler/fable-elmish
+## F#/OCaml ecosystem
+
+* https://facebook.github.io/reason/
+* https://github.com/alpaca-lang/alpaca
+* http://elm-lang.org/
+* http://fable.io/
 * https://ionide.io
-* https://facebook.github.io/react-native/
+
+---
+
+
+***
+
+# Q?

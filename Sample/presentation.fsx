@@ -53,6 +53,7 @@ type Gender =
 | Male
 | Female
 | Other of string
+| NotProvided
 
 let male = Male
 let female = Other "111"
@@ -61,6 +62,8 @@ let toString = function
                 | Male -> "male"
                 | Female -> "female"
                 | Other s -> s
+                | NotProvided -> failwith "not implemented"
+
 
 let fromString = function
                   | "male" -> Male
@@ -93,8 +96,16 @@ module Currying =
         logger "ended"
         res
     
+    let a = {0..10..1000}
+
+    //a.Filter().Map()
+
+    let print a =
+         printfn "%d" a
+         a
     let consoleLogger output = printfn "%s: %s" (System.DateTime.Now.ToString("HH:mm:ss.f")) output
-    
+
+
     let result = sample consoleLogger 
                         (
                             fun () -> 
@@ -102,4 +113,17 @@ module Currying =
                                 42
                         )
     
+    //PIPE!
+
+
+let numbers = {0..1000}
+
+let evenOnly = Seq.filter (fun n -> n%2=0) numbers
+let doubled = Seq.map ((*) 2) evenOnly
+let stringified = Seq.map (fun d-> d.ToString()) doubled
+
+let evenInfix = {0..1000} |> ( Seq.filter (fun n -> n%2=0) )
+// let greeted = Seq.map greet stringified
+
+    // ["Hello 0","Hello 4", ...
     
