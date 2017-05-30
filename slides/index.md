@@ -71,14 +71,14 @@ public class CreateCustomerDto
                     string name,
                     string lastName, 
                     string phone, 
-                    password)
+                    string password)
     {
         this.Id = id;
         this.Username = username;
         this.Name = name;
         this.Surname = lastName;
         this.Phone = phone;
-        this.Password  = password
+        this.Password  = password;
     }
     public string ID {get;}
     public string Username {get;}
@@ -97,7 +97,7 @@ var result = CustomerService.Handle( //method overloading
                             phone: "79062190016"
                             name: "Alexander",
                             lastName: "Prooks",
-                            password:"helloWorld"
+                            password: "helloWorld"
                 ));
 ```
 
