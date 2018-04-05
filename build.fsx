@@ -7,6 +7,16 @@
 
 #load "fsreveal.fsx"
 
+type ITest = interface end
+
+type MyRecord = {
+       hello: string
+    }
+    with 
+        interface ITest
+        member x.Upper = x.hello + "10"
+
+
 // Git configuration (used for publishing documentation in gh-pages branch)
 // The profile where the project is posted
 let gitOwner = "myGitUser"

@@ -14,12 +14,14 @@
 <br />
 Alexander Prooks - [@aprooks](http://www.twitter.com/aprooks)
 
+
 ***
 
 
 <br/>
 <br/>
-<img src="images/Applicita-logo-onblack.png" style="background: transparent; border-style: none;"  />
+# apaleo 
+<img src="images/leo.png" style="background: transparent; border-style: none;"  />
 
 ***
 
@@ -327,7 +329,7 @@ public sealed class CreateCustomer {
     // string -> string
     let append (tail:string) string = "Hello " + tail
     
-    // infered types:
+    // inferred types:
     let append tail = "Hello " + tail
     
     // append 10 //compile error
