@@ -19,10 +19,10 @@ type MyRecord = {
 
 // Git configuration (used for publishing documentation in gh-pages branch)
 // The profile where the project is posted
-let gitOwner = "myGitUser"
+let gitOwner = "aprooks"
 let gitHome = "https://github.com/" + gitOwner
 // The name of the project on GitHub
-let gitProjectName = "MyProject"
+let gitProjectName = "F-sharp-migration"
 // The name of the GitHub repo subdirectory to publish slides to
 let gitSubDir = ""
 
