@@ -23,11 +23,16 @@ Alexander Prooks - [@aprooks](http://www.twitter.com/aprooks)
 # apaleo 
 <img src="images/leo.png" style="background: transparent; border-style: none;"  />
 
+<br>https://apaleo.com/
+
+
 ***
 
-### Type system intro
+### Defining a problem
 
-#### non sucking C# handling pipe
+---
+
+#### What can go wrong?
 
 ``` C#
 public class CustomerService
@@ -90,8 +95,11 @@ public class CreateCustomerDto
 
 ---
 
+### Uniform interface
+
+
 ``` C#
-var result = CustomerService.Handle( //method overloading
+var result = CustomerService.Handle(
                   new CreateCustomerDto(  
                             id: "Id",
                             username: "Aprooks",
@@ -134,23 +142,37 @@ var result = CustomerService.Handle( //method overloading
 
 ***
 
-## F# version
+## Functional = data + functions
 
-### Record types
+### F# = types + functions
 
-    type CreateCustomer = {
-        id: string
-        username: string
-        email: string
-        phone: string
-        name: string
-        lastName: string
-        password: string
-    }
+***
+
+### Records types
+
+* Flat data
+* All fields are required => "AND type"
+* Immutable by default (like everything else)
 
 ---
 
-### Generated .net code
+### Definition
+
+``` F#
+type CreateCustomer = {
+    Id: string
+    Username: string
+    Email: string
+    Phone: string
+    Name: string
+    LastName: string
+    Password: string
+}
+```
+
+---
+
+### Generated C# code
 
 ``` C#
 [Serializable]
@@ -170,58 +192,73 @@ public sealed class CreateCustomer {
 [Full comparison](https://fsharpforfunandprofit.com/posts/fsharp-decompiled/)
 
 ---
-### Using records
+### Init with data
 
-    let dto = {
-        id= "test"
-        username= "aprooks"
-        email= "aprooks@live.ru"
-        phone= "79062190016"
-        name= "Alexander"
-        lastName= "Prooks"
-        password= "secret"
-    }
-
+``` F#
+let dto = {
+    Id= "test"
+    Username= "aprooks"
+    Email= "aprooks@live.ru"
+    Phone= "79062190016"
+    Name= "Alexander"
+    LastName= "Prooks"
+    Password= "secret"
+}
+```
 ---
 
 ### Syntax sugar
 
-    let copy = {
-        id= "test"
-        username= "aprooks"
-        email= "aprooks@live.ru"
-        phone= "79062190016"
-        name= "Alexander"
-        lastName= "Prooks"
-        password= "secret"
-    }
-    copy = dto //values comparison
-    //true
-    
-    let b = {a with id="Test2"}
-    //!!!!
+``` F#
+let copyPasted = {
+    Id= "test"
+    Username= "aprooks"
+    Email= "aprooks@live.ru"
+    Phone= "79062190016"
+    Name= "Alexander"
+    LastName= "Prooks"
+    Password= "secret"
+}
+copyPasted = dto //true
 
-    b = a //false
----
+let b = {a with id="Test2"} //copy
 
-## Self documented code
+b = a //false
 
-### Aliases
+```
 
-    type Id = string
-    type Email = string
-    type Username = string
-    
-    type CreateCustomer2 = {
-        id: Id
-        username: Username
-        email: Email
-        phone: string
-        name: string
-        lastName: string
-        password: string
-    }
-    
+***
+
+### Aliases aka document your types
+
+``` F#
+// I'm prototyping and not sure what it will be
+type Id = NotImplementedException 
+type Email = string
+type Username = string
+
+type CreateCustomer2 = {
+    Id: Id
+    Username: Username
+    Email: Email
+    Phone: string
+    Name: string
+    LastName: string
+    Password: string
+}
+```
+
+***
+
+### Discriminated union
+
+    // Choose strictly one
+        type ``Enum on steroids`` =
+        | ``I am valid case but I don't have data``
+        | SomethingElse
+        | ``I have data`` of Data
+        | ``I am recursion`` of ``Enum on steroids``
+
 ---
 
 ### Enforced single-case types
@@ -239,61 +276,121 @@ public sealed class CreateCustomer {
         lastName: string
         password: string
     }
-
 ---
 
-### Compile time validation!
+### Compile time validation
 
     let id = Id "test"
     let Username = Username "test"
     
     //id = Username //compile error
-    
+
 ---
+
+
 
 ### Multiple case type (DU)
 
-    type Gender = 
-    | Male
-    | Female
-    | Other of string
+    // I wish it never happened  
+    type SystemError =
+        | DatabaseTimeout
+        | Unauthorised
     
-    type CustomerWithGender = {
-        // ... 
-        Gender: Gender
-    }
-    
-    let a = Male
-    let b = Other "111"
+
+    // service module
+    type CustomerServiceError = 
+        | UserAlreadyExists
+
+    // Composition root level
+    type ApplicationErrors = 
+        | System of SystemError
+        | CustomerService of CustomerServiceError
+        | OtherService of OtherServiceError
+---
+
+### Pattern matching to handle them all
+
+``` F#
+let toErrorMessage error = 
+    match error with 
+    | System err -> 
+        match err with 
+        | DatabaseTimeout err ->
+            (HttpStatus.InternalServerError, "Ooops :(")
+        | Unauthorised err ->
+            (HttpStatus.Unauthorised, "Go away") 
+    | CustomerService of err -> 
+        match err with 
+        | UserAlreadyExists -> 
+            (HttpStatus.Conflict, "You are already registered")
+    | OtherService of err -> 
+        OtherService.ToErrorMessage err
+```
+---
+
+### DU Patterns
 
 ---
 
-### Pattern matching
+### Option: Empty, but not a null
 
-    let toString gender= 
-        match gender with 
-        | Male -> "male"
-        | Female -> "female"
-        | Other s -> s
+``` F#
+type Option<`a> = 
+    | Some of `a
+    | None
 
-    //same as:
-    let toString =
-        function 
-        | Male -> "male"
-        | Female -> "female"
-        | Other s -> s
+type User = {
+    Id : UserId
+    Address : Address option
+}
+
+let OnUserRegistered user = 
+    /// blabla
+    match user.Address with 
+    | Some addr -> sendPostcard addr
+    | None -> ignore()
+```
+
+---
+
+### Result: Done or error?
+
+``` F#
+type Result<'T,'TError> = 
+    | Ok of ResultValue:'T 
+    | Error of ErrorValue:'TError
+
+let registerUser (load, save) user = 
+    let dbUser = load user.UserId
+    match dbUser with 
+    | None ->
+        save user 
+        Ok user.User
+    | Some _ ->
+        Error UserService.AlreadyRegistered
+---
+
+https://swlaschin.gitbooks.io/fsharpforfunandprofit/content/posts/recipe-part2.html
+
+```
+### Data everyone else can trust
+
+``` F#
+type Id = private Id of string
+
+module Id = 
+    let create (input : string) = 
+        if (input.Length > 10)
+            // Imperative style:
+            failwith new ArgumentException()
+        else
+            Id ( input.ToUpperInvariant() )
+
+type UserId = UserId of Id
+```
 
 ---
 
-### other way round
-
-    let fromString = function
-        | "male" -> Male
-        | "female" -> Female
-        | other -> Other other
-
-
----
 
 ### DDD
 
@@ -306,9 +403,10 @@ public sealed class CreateCustomer {
     | ``Percent per night`` of Percent
     | ``Monetary per stay`` of Amount
     | ``Monetary for extra guest per night`` of uint * Amount
-    | ``Percent for extra stay`` of  NumberOfNights * Percentage
+    | ``Percent for extra stay`` of  NumberOfNights * Percent
 
-    // C#: public class MonetaryPerNight: IDiscount blah blah
+    // C#: public class MonetaryPerNight: IDiscount 
+    // blah blah
 
 ---
 
@@ -335,7 +433,6 @@ public sealed class CreateCustomer {
     // append 10 //compile error
     append "world" //"Hello world"
     
-
     // string -> string -> string
     let concat a b = a + b
 
@@ -407,7 +504,6 @@ public sealed class CreateCustomer {
 
 ## DI F# way
 
-
     module Persistence = 
 
         let saveToDb connString (id,obj) = 
@@ -435,7 +531,7 @@ public sealed class CreateCustomer {
 
 ## Data pipes [1]
 
-    let inline (|>) f x = x f   
+    let inline (|>) f x = x f
     
     let evenF = (|>) ( {0..1000} ) ( Seq.filter (fun n -> n%2=0) )
     
@@ -496,10 +592,9 @@ public sealed class CreateCustomer {
 * https://github.com/alpaca-lang/alpaca
 * http://elm-lang.org/
 * http://fable.io/
-* https://ionide.io
+* https://ionide.io/
 
 ---
-
 
 ***
 
