@@ -14,16 +14,16 @@
 <br />
 Alexander Prooks - [@aprooks](http://www.twitter.com/aprooks)
 
-
 ***
-
 
 <br/>
 <br/>
 # apaleo 
 <img src="images/leo.png" style="background: transparent; border-style: none;"  />
 
-<br>https://apaleo.com/
+<br>
+
+https://apaleo.com/
 
 
 ***
@@ -51,6 +51,7 @@ public class CustomerService
     }
 
 }
+
 ```
 
 ---
@@ -110,22 +111,19 @@ var result = CustomerService.Handle(
                             password: "helloWorld"
                 ));
 ```
-
 ---
 
 ``` C#
-//some wrapper
-    public Result Handle<T>(T request){
+    // middleware
+    public Result Handle<TService, T>(TService service, T request){
         Log.Debug("Handled {request}",request);
-        //https://github.com/JeremySkinner/FluentValidation/wiki
+
         var validator = ValidationFactory.GetValidator<T>();
         if(validator!=null){
             var validationResult = validator.Validate(request);
             if(!result.IsValid)
                 return validationResult.ToError();
-        }        
-        if(Deduplicator.IsDuplicate(request))
-            return Errors.DuplicateRequest;
+        }
         object result;
         try{
             result = Polly.Handle<TimeoutException>()
@@ -134,7 +132,7 @@ var result = CustomerService.Handle(
         }
         catch(Exception ex)
         {
-            return Error.Exception(ex)
+            return ex.ToError()
         }
         return Result.Handled(result);
     }
@@ -142,9 +140,11 @@ var result = CustomerService.Handle(
 
 ***
 
-## Functional = data + functions
+## Functional = data + (pure) functions
 
-### F# = types + functions
+<br>
+
+### F# = types + functions + imperative fallback
 
 ***
 
@@ -169,7 +169,6 @@ type CreateCustomer = {
     Password: string
 }
 ```
-
 ---
 
 ### Generated C# code
@@ -221,7 +220,7 @@ let copyPasted = {
 }
 copyPasted = dto //true
 
-let b = {a with id="Test2"} //copy
+let b = {a with Id="Test2"} //copy
 
 b = a //false
 
@@ -231,39 +230,41 @@ b = a //false
 
 ### Aliases aka document your types
 
-``` F#
-// I'm prototyping and not sure what it will be
-type Id = NotImplementedException 
-type Email = string
-type Username = string
+    // I'm prototyping and not sure what it will be
+    type Id = NotImplementedException 
+    type Email = string
+    type Username = string
 
-type CreateCustomer2 = {
-    Id: Id
-    Username: Username
-    Email: Email
-    Phone: string
-    Name: string
-    LastName: string
-    Password: string
-}
-```
+    type CreateCustomer2 = {
+        Id: Id
+        Username: Username
+        Email: Email
+        Phone: string
+        Name: string
+        LastName: string
+        Password: string
+    }
 
 ***
 
 ### Discriminated union
 
+* Pick only one of: "OR" type
+
+---
     // Choose strictly one
-        type ``Enum on steroids`` =
-        | ``I am valid case but I don't have data``
+    type ``Enum on steroids`` =
+        | ``I am a valid case without data``
         | SomethingElse
         | ``I have data`` of Data
         | ``I am recursion`` of ``Enum on steroids``
 
 ---
 
-### Enforced single-case types
+### Single-case aka data wrapper
 
-    type Id = Id of string
+    type Id = 
+        | Id of string
     type Email = Email of string
     type Username = Username of string
     
@@ -281,13 +282,11 @@ type CreateCustomer2 = {
 ### Compile time validation
 
     let id = Id "test"
-    let Username = Username "test"
+    let username = Username "test"
     
-    //id = Username //compile error
+    //id = username //compile error
 
 ---
-
-
 
 ### Multiple case type (DU)
 
@@ -296,7 +295,6 @@ type CreateCustomer2 = {
         | DatabaseTimeout
         | Unauthorised
     
-
     // service module
     type CustomerServiceError = 
         | UserAlreadyExists
@@ -310,73 +308,70 @@ type CreateCustomer2 = {
 
 ### Pattern matching to handle them all
 
-``` F#
-let toErrorMessage error = 
-    match error with 
-    | System err -> 
-        match err with 
-        | DatabaseTimeout err ->
-            (HttpStatus.InternalServerError, "Ooops :(")
-        | Unauthorised err ->
-            (HttpStatus.Unauthorised, "Go away") 
-    | CustomerService of err -> 
-        match err with 
-        | UserAlreadyExists -> 
-            (HttpStatus.Conflict, "You are already registered")
-    | OtherService of err -> 
-        OtherService.ToErrorMessage err
-```
+    let toErrorMessage error = 
+        match error with 
+        | System err -> 
+            match err with 
+            | DatabaseTimeout err ->
+                (HttpStatus.InternalServerError, "Ooops :(")
+            | Unauthorised err ->
+                (HttpStatus.Unauthorised, "Go away") 
+        | CustomerService of err -> 
+            match err with 
+            | UserAlreadyExists -> 
+                (HttpStatus.Conflict, "You are already registered")
+        | OtherService of err -> 
+            OtherService.ToErrorMessage err
+
 ---
 
 ### DU Patterns
 
 ---
 
-### Option: Empty, but not a null
+### Option: Empty, but not null
 
-``` F#
-type Option<`a> = 
-    | Some of `a
-    | None
 
-type User = {
-    Id : UserId
-    Address : Address option
-}
+    type Option<`a> = 
+        | Some of `a
+        | None
 
-let OnUserRegistered user = 
-    /// blabla
-    match user.Address with 
-    | Some addr -> sendPostcard addr
-    | None -> ignore()
-```
+    type User = {
+        Id : UserId
+        Address : Address option
+    }
+
+    let OnUserRegistered user = 
+        /// blabla
+        match user.Address with 
+        | Some addr -> sendPostcard addr
+        | None -> ignore()
 
 ---
-
 ### Result: Done or error?
 
-``` F#
-type Result<'T,'TError> = 
-    | Ok of ResultValue:'T 
-    | Error of ErrorValue:'TError
+    type Result<'TSuccess,'TFailure> = 
+        | Success of 'TSuccess
+        | Failure of 'TFailure
 
-let registerUser (load, save) user = 
-    let dbUser = load user.UserId
-    match dbUser with 
-    | None ->
-        save user 
-        Ok user.User
-    | Some _ ->
-        Error UserService.AlreadyRegistered
+    let registerUser (load, save) user = 
+        let dbUser = load user.Id
+        match dbUser with 
+        | None ->
+            save user 
+            Success(user.Id)
+        | Some _ ->
+            Error(UserService.AlreadyRegistered)
+
+[Railway oriented programming](https://swlaschin.gitbooks.io/fsharpforfunandprofit/content/posts/recipe-part2.html)
+
 ---
 
-https://swlaschin.gitbooks.io/fsharpforfunandprofit/content/posts/recipe-part2.html
-
-```
 ### Data everyone else can trust
 
 ``` F#
-type Id = private Id of string
+type Id = 
+    private Id of string
 
 module Id = 
     let create (input : string) = 
@@ -390,8 +385,6 @@ type UserId = UserId of Id
 ```
 
 ---
-
-
 ### DDD
 
     type Percent = Percent of decimal
@@ -407,14 +400,28 @@ type UserId = UserId of Id
 
     // C#: public class MonetaryPerNight: IDiscount 
     // blah blah
+---
+
+### Domain modelling made functional
+
+<img src="images/Domain-modelling.jpg" style="background: transparent; border-style: none;"  />
+
+<br>
+
+[Where to buy](https://fsharpforfunandprofit.com/books/)
 
 ---
 
 ### Types conclusion
 
+<br>
+
 * No boilerplate
 * Readability
 * Type safety for free
+* Design with types
+* Unit test only interactions (functions)
+
 
 ***
 
@@ -456,8 +463,7 @@ type UserId = UserId of Id
     let consoleLogger output =
         printfn "%s: %s" (System.DateTime.Now.ToString("HH:mm:ss.f")) output
     
-    let result = sample consoleLogger 
-                        (
+    let result = sample consoleLogger (
                             fun () -> 
                                 System.Threading.Thread.Sleep(500)
                                 42
@@ -482,6 +488,7 @@ type UserId = UserId of Id
     let d = 100 + "test" //error
 
 ***
+
 # let (|>) x f = f x
 
 ---
@@ -513,9 +520,9 @@ type UserId = UserId of Id
     module CompositionRoot =
         
         let connectionString = loadFromConfig("database")
-        let persist = saveToDb connectionString
+        let save = saveToDb connectionString
 
-    let result = persist ("123",customer)
+    let result = save ("123",customer)
     
 ---
 
@@ -566,7 +573,7 @@ type UserId = UserId of Id
 * Utilities [Paket, Fake]
 * Contracts 
 * Helpers 
-* Tests     [FsCheck, Expecto]
+* Tests  [FsCheck, Expecto]
 * Code as client 
 
 ***
